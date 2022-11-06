@@ -44,10 +44,11 @@ from .const import (
     GLOW,
     PILOTEV1,
     PILOTEV2,
-    CONF_ATTRS,
+    CONF_ATTRS, CONF_TIMER,
 )
 
 MODE_LIST = [HVACMode.HEAT, HVACMode.OFF]
+MODE_LIST_V2 = MODE_LIST.copy().insert(0, HVACMode.AUTO)
 PRESET_LIST = [PRESET_NONE, PRESET_COMFORT, PRESET_ECO, PRESET_AWAY]
 
 _LOGGER = logging.getLogger(__name__)
@@ -112,7 +113,8 @@ class HeatzyThermostat(CoordinatorEntity[HeatzyDataUpdateCoordinator], ClimateEn
 
     async def async_turn_on(self) -> str:
         """Turn device on."""
-        await self.async_set_preset_mode(PRESET_COMFORT)
+        if self.hvac_mode == HVACMode.OFF:
+            await self.async_set_preset_mode(PRESET_COMFORT)
 
     async def async_turn_off(self) -> str:
         """Turn device off."""
@@ -172,6 +174,33 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
         PRESET_NONE: "stop",
     }
     # spell-checker:enable
+
+    @property
+    def hvac_mode(self):
+        """Return hvac operation ie. heat, cool mode."""
+        if self.coordinator.data[self.unique_id].get(CONF_ATTR, {}).get(CONF_TIMER) == 1:
+            return HVACMode.AUTO
+        return super().hvac_mode
+
+    async def async_set_hvac_mode(self, hvac_mode: str) -> bool:
+        """Set new hvac mode."""
+        if hvac_mode != self.hvac_mode:
+            if hvac_mode == HVACMode.OFF:
+                await self.async_change_timer(False)
+                await self.async_turn_off()
+            elif hvac_mode == HVACMode.HEAT:
+                await self.async_change_timer(False)
+                await self.async_turn_on()
+            elif hvac_mode == HVACMode.AUTO:
+                await self.async_change_timer(True)
+                await self.async_turn_on()
+
+    async def async_change_timer(self, timer: bool):
+        await self.coordinator.api.async_control_device(
+            self.unique_id,
+            {CONF_ATTRS: {CONF_TIMER: 1 if timer else 0}},
+        )
+        await self.coordinator.async_request_refresh()
 
     @property
     def preset_mode(self) -> str:
