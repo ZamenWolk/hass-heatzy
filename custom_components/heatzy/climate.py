@@ -48,7 +48,7 @@ from .const import (
 )
 
 MODE_LIST = [HVACMode.HEAT, HVACMode.OFF]
-MODE_LIST_V2 = [HVACMode.HEAT_COOL, HVACMode.HEAT, HVACMode.OFF]
+MODE_LIST_V2 = [HVACMode.AUTO, HVACMode.HEAT, HVACMode.OFF]
 PRESET_LIST = [PRESET_NONE, PRESET_COMFORT, PRESET_ECO, PRESET_AWAY]
 
 _LOGGER = logging.getLogger(__name__)
@@ -161,6 +161,9 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
 
     _attr_hvac_modes = MODE_LIST_V2
     _attr_supported_features = HeatzyThermostat._attr_supported_features | ClimateEntityFeature.TARGET_TEMPERATURE
+    _attr_min_temp = 7
+    _attr_max_temp = 21
+    _attr_target_temperature_step = 1
 
     # spell-checker:disable
     HEATZY_TO_HA_STATE = {
@@ -179,14 +182,14 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
     # spell-checker:enable
 
     PRESET_TO_TEMP = {
-        PRESET_COMFORT: 20,
+        PRESET_COMFORT: 21,
         PRESET_ECO: 16,
         PRESET_AWAY: 7
     }
 
     @property
-    def target_temperature(self) -> float:
-        return self.PRESET_TO_TEMP[self.preset_mode]
+    def target_temperature(self) -> float | None:
+        return self.PRESET_TO_TEMP.get(self.preset_mode)
 
     async def async_set_temperature(self, **kwargs) -> None:
         curr_preset = PRESET_COMFORT
@@ -200,9 +203,12 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
     @property
     def hvac_mode(self):
         """Return hvac operation ie. heat, cool mode."""
-        if self.coordinator.data[self.unique_id].get(CONF_ATTR, {}).get(CONF_TIMER) == 1:
-            return HVACMode.HEAT_COOL
-        return super().hvac_mode
+        if self.preset_mode == PRESET_NONE:
+            return HVACMode.OFF
+        elif self.coordinator.data[self.unique_id].get(CONF_ATTR, {}).get(CONF_TIMER) == 1:
+            return HVACMode.AUTO
+        else:
+            return HVACMode.HEAT
 
     async def async_set_hvac_mode(self, hvac_mode: str) -> bool:
         """Set new hvac mode."""
@@ -213,7 +219,7 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
             elif hvac_mode == HVACMode.HEAT:
                 await self.async_change_timer(False)
                 await self.async_turn_on()
-            elif hvac_mode == HVACMode.HEAT_COOL:
+            elif hvac_mode == HVACMode.AUTO:
                 await self.async_change_timer(True)
                 await self.async_turn_on()
 
