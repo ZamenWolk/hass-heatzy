@@ -238,7 +238,7 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
     async def do_control_device(self, preset_mode: str, timer: bool):
         await self.coordinator.api.async_control_device(
             self.unique_id,
-            {CONF_ATTRS: {CONF_MODE: self.HA_TO_HEATZY_STATE.get(preset_mode), CONF_TIMER: 1 if timer else 0}},
+            {CONF_ATTRS: {CONF_MODE: self.HA_TO_HEATZY_STATE.get(preset_mode), CONF_TIMER: 1 if timer else 0}}
         )
         await self.coordinator.async_request_refresh()
 
