@@ -48,7 +48,7 @@ from .const import (
 )
 
 MODE_LIST = [HVACMode.HEAT, HVACMode.OFF]
-MODE_LIST_V2 = MODE_LIST.copy().insert(0, HVACMode.AUTO)
+MODE_LIST_V2 = MODE_LIST.copy().insert(0, HVACMode.HEAT_COOL)
 PRESET_LIST = [PRESET_NONE, PRESET_COMFORT, PRESET_ECO, PRESET_AWAY]
 
 _LOGGER = logging.getLogger(__name__)
@@ -181,7 +181,7 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
     def hvac_mode(self):
         """Return hvac operation ie. heat, cool mode."""
         if self.coordinator.data[self.unique_id].get(CONF_ATTR, {}).get(CONF_TIMER) == 1:
-            return HVACMode.AUTO
+            return HVACMode.HEAT_COOL
         return super().hvac_mode
 
     async def async_set_hvac_mode(self, hvac_mode: str) -> bool:
@@ -193,7 +193,7 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
             elif hvac_mode == HVACMode.HEAT:
                 await self.async_change_timer(False)
                 await self.async_turn_on()
-            elif hvac_mode == HVACMode.AUTO:
+            elif hvac_mode == HVACMode.HEAT_COOL:
                 await self.async_change_timer(True)
                 await self.async_turn_on()
 
