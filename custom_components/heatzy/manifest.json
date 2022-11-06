@@ -1,6 +1,6 @@
 {
     "domain": "heatzy",
-    "name": "Heatzy",
+    "name": "Heatzy ZamenWolk Edition",
     "config_flow": true,
     "documentation": "https://github.com/ZamenWolk/hass-heatzy",
     "issue_tracker": "https://github.com/ZamenWolk/hass-heatzy/issues",
