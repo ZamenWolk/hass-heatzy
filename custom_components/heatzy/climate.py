@@ -160,6 +160,7 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
     """Heaty Pilote v2."""
 
     _attr_hvac_modes = MODE_LIST_V2
+    _attr_supported_features = HeatzyThermostat._attr_supported_features | ClimateEntityFeature.TARGET_TEMPERATURE
 
     # spell-checker:disable
     HEATZY_TO_HA_STATE = {
@@ -176,6 +177,25 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
         PRESET_NONE: "stop",
     }
     # spell-checker:enable
+
+    PRESET_TO_TEMP = {
+        PRESET_COMFORT: 20,
+        PRESET_ECO: 16,
+        PRESET_AWAY: 7
+    }
+
+    @property
+    def target_temperature(self) -> float:
+        return self.PRESET_TO_TEMP[self.preset_mode]
+
+    async def async_set_temperature(self, **kwargs) -> None:
+        curr_preset = PRESET_COMFORT
+        temp = kwargs["temperature"]
+        for pr in self.PRESET_TO_TEMP.items():
+            if abs(pr[1] - temp) < abs(self.PRESET_TO_TEMP[curr_preset] - temp):
+                curr_preset = pr[0]
+
+        await self.async_set_preset_mode(curr_preset)
 
     @property
     def hvac_mode(self):
