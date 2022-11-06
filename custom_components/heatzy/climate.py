@@ -48,8 +48,7 @@ from .const import (
 )
 
 MODE_LIST = [HVACMode.HEAT, HVACMode.OFF]
-MODE_LIST_V2 = [HVACMode.HEAT_COOL, HVACMode.HEAT, HVACMode.OFF]
-PRESET_LIST = [PRESET_NONE, PRESET_COMFORT, PRESET_ECO, PRESET_AWAY]
+MODE_LIST_V2 = [HVACMode.HEAT_COOL, HVACMode.HEAT, HVACMode.DRY, HVACMode.COOL, HVACMode.OFF]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -121,6 +120,89 @@ class HeatzyThermostat(CoordinatorEntity[HeatzyDataUpdateCoordinator], ClimateEn
         await self.async_set_preset_mode(PRESET_NONE)
 
 
+class HeatzyPiloteV2Thermostat(CoordinatorEntity[HeatzyDataUpdateCoordinator], ClimateEntity):
+    """Heaty Pilote v2."""
+
+    # spell-checker:disable
+    HEATZY_TO_HA_STATE = {
+        "cft": HVACMode.HEAT,
+        "eco": HVACMode.DRY,
+        "fro": HVACMode.COOL,
+        "stop": HVACMode.OFF,
+    }
+
+    HA_TO_HEATZY_STATE = {
+        HVACMode.HEAT: "cft",
+        HVACMode.DRY: "eco",
+        HVACMode.COOL: "fro",
+        HVACMode.OFF: "stop",
+    }
+    # spell-checker:enable
+
+    _attr_hvac_modes = MODE_LIST_V2
+    _attr_temperature_unit = TEMP_CELSIUS
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator: HeatzyDataUpdateCoordinator, unique_id):
+        """Init."""
+        super().__init__(coordinator)
+        self._attr_unique_id = unique_id
+        self._attr_name = coordinator.data[unique_id][CONF_ALIAS]
+
+    @property
+    def device_info(self):
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self.unique_id)},
+            name=self.name,
+            manufacturer=DOMAIN,
+            sw_version=self.coordinator.data[self.unique_id].get(CONF_VERSION),
+            model=self.coordinator.data[self.unique_id].get(CONF_MODEL),
+        )
+
+    @property
+    def hvac_mode(self):
+        """Return hvac operation ie. heat, cool mode."""
+        if self.coordinator.data[self.unique_id].get(CONF_ATTR, {}).get(CONF_TIMER) == 1:
+            return HVACMode.HEAT_COOL
+        return self.HEATZY_TO_HA_STATE.get(
+            self.coordinator.data[self.unique_id].get(CONF_ATTR, {}).get(CONF_MODE)
+        )
+
+    async def async_set_hvac_mode(self, hvac_mode: str) -> bool:
+        """Set new hvac mode."""
+        await self.async_change_timer((hvac_mode == HVACMode.HEAT_COOL))
+        if hvac_mode != HVACMode.HEAT_COOL:
+            await self.async_update_mode(hvac_mode)
+
+    async def async_turn_on(self) -> str:
+        """Turn device on."""
+        await self.async_set_hvac_mode(HVACMode.HEAT)
+
+    async def async_turn_off(self) -> str:
+        """Turn device off."""
+        await self.async_set_hvac_mode(HVACMode.OFF)
+
+    async def async_change_timer(self, timer: bool):
+        await self.coordinator.api.async_control_device(
+            self.unique_id,
+            {CONF_ATTRS: {CONF_TIMER: 1 if timer else 0}},
+        )
+        await self.coordinator.async_request_refresh()
+
+    async def async_update_mode(self, hvac_mode: str) -> None:
+        """Set new mode."""
+        try:
+            await self.coordinator.api.async_control_device(
+                self.unique_id,
+                {CONF_ATTRS: {CONF_MODE: self.HA_TO_HEATZY_STATE.get(hvac_mode)}},
+            )
+            await self.coordinator.async_request_refresh()
+        except HeatzyException as error:
+            _LOGGER.error("Set mode (%s) %s (%s)", hvac_mode, error, self.name)
+
+
+
 class HeatzyPiloteV1Thermostat(HeatzyThermostat):
     """Heaty Pilote v1."""
 
@@ -150,73 +232,6 @@ class HeatzyPiloteV1Thermostat(HeatzyThermostat):
             await self.coordinator.api.async_control_device(
                 self.unique_id,
                 {"raw": self.HA_TO_HEATZY_STATE.get(preset_mode)},
-            )
-            await self.coordinator.async_request_refresh()
-        except HeatzyException as error:
-            _LOGGER.error("Set preset mode (%s) %s (%s)", preset_mode, error, self.name)
-
-
-class HeatzyPiloteV2Thermostat(HeatzyThermostat):
-    """Heaty Pilote v2."""
-
-    _attr_hvac_modes = MODE_LIST_V2
-
-    # spell-checker:disable
-    HEATZY_TO_HA_STATE = {
-        "cft": PRESET_COMFORT,
-        "eco": PRESET_ECO,
-        "fro": PRESET_AWAY,
-        "stop": PRESET_NONE,
-    }
-
-    HA_TO_HEATZY_STATE = {
-        PRESET_COMFORT: "cft",
-        PRESET_ECO: "eco",
-        PRESET_AWAY: "fro",
-        PRESET_NONE: "stop",
-    }
-    # spell-checker:enable
-
-    @property
-    def hvac_mode(self):
-        """Return hvac operation ie. heat, cool mode."""
-        if self.coordinator.data[self.unique_id].get(CONF_ATTR, {}).get(CONF_TIMER) == 1:
-            return HVACMode.HEAT_COOL
-        return super().hvac_mode
-
-    async def async_set_hvac_mode(self, hvac_mode: str) -> bool:
-        """Set new hvac mode."""
-        if hvac_mode != self.hvac_mode:
-            if hvac_mode == HVACMode.OFF:
-                await self.async_change_timer(False)
-                await self.async_turn_off()
-            elif hvac_mode == HVACMode.HEAT:
-                await self.async_change_timer(False)
-                await self.async_turn_on()
-            elif hvac_mode == HVACMode.HEAT_COOL:
-                await self.async_change_timer(True)
-                await self.async_turn_on()
-
-    async def async_change_timer(self, timer: bool):
-        await self.coordinator.api.async_control_device(
-            self.unique_id,
-            {CONF_ATTRS: {CONF_TIMER: 1 if timer else 0}},
-        )
-        await self.coordinator.async_request_refresh()
-
-    @property
-    def preset_mode(self) -> str:
-        """Return the current preset mode, e.g., home, away, temp."""
-        return self.HEATZY_TO_HA_STATE.get(
-            self.coordinator.data[self.unique_id].get(CONF_ATTR, {}).get(CONF_MODE)
-        )
-
-    async def async_set_preset_mode(self, preset_mode: str) -> None:
-        """Set new preset mode."""
-        try:
-            await self.coordinator.api.async_control_device(
-                self.unique_id,
-                {CONF_ATTRS: {CONF_MODE: self.HA_TO_HEATZY_STATE.get(preset_mode)}},
             )
             await self.coordinator.async_request_refresh()
         except HeatzyException as error:
