@@ -159,6 +159,8 @@ class HeatzyPiloteV1Thermostat(HeatzyThermostat):
 class HeatzyPiloteV2Thermostat(HeatzyThermostat):
     """Heaty Pilote v2."""
 
+    _attr_hvac_modes = MODE_LIST_V2
+
     # spell-checker:disable
     HEATZY_TO_HA_STATE = {
         "cft": PRESET_COMFORT,
