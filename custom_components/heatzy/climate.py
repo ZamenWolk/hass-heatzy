@@ -86,7 +86,7 @@ class HeatzyThermostat(CoordinatorEntity[HeatzyDataUpdateCoordinator], ClimateEn
         """Init."""
         super().__init__(coordinator)
         self._attr_unique_id = unique_id
-        self._attr_name = coordinator.data[unique_id][CONF_ALIAS]
+        self._attr_name = "Thermostat"
 
     @property
     def device_info(self):
