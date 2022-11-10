@@ -83,7 +83,7 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
         """Update data."""
         try:
             async with async_timeout.timeout(API_TIMEOUT):
-                return await self.api.async_get_devices()
+                return await self._api.async_get_devices()
         except AuthenticationFailed as error:
             raise ConfigEntryAuthFailed from error
         except HeatzyException as error:

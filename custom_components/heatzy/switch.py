@@ -57,7 +57,7 @@ class LockSwitchEntity(CoordinatorEntity[HeatzyDataUpdateCoordinator], SwitchEnt
     async def async_turn_on(self) -> None:
         """Turn the entity on."""
         try:
-            await self.coordinator.api.async_control_device(
+            await self.coordinator.async_control_device(
                 self.unique_id, {CONF_ATTRS: {CONF_LOCK: 1}}
             )
         except HeatzyException as error:
@@ -68,7 +68,7 @@ class LockSwitchEntity(CoordinatorEntity[HeatzyDataUpdateCoordinator], SwitchEnt
     async def async_turn_off(self) -> None:
         """Turn the entity off."""
         try:
-            await self.coordinator.api.async_control_device(
+            await self.coordinator.async_control_device(
                 self.unique_id, {CONF_ATTRS: {CONF_LOCK: 0}}
             )
         except HeatzyException as error:
