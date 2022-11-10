@@ -217,16 +217,16 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
     async def async_set_hvac_mode(self, hvac_mode: str) -> bool:
         """Set new hvac mode."""
         if hvac_mode == HVACMode.OFF:
-            await self.async_set_preset_mode(PRESET_NONE)
             await self.async_set_auto_mode(False)
+            await self.async_set_preset_mode(PRESET_NONE)
         else:
-            if self.preset_mode:
-                await self.async_set_preset_mode(PRESET_COMFORT)
-
             if hvac_mode == HVACMode.HEAT:
                 await self.async_set_auto_mode(False)
             elif hvac_mode == HVACMode.AUTO:
                 await self.async_set_auto_mode(True)
+
+            if self.preset_mode == PRESET_NONE:
+                await self.async_set_preset_mode(PRESET_COMFORT)
 
     @property
     def preset_mode(self) -> str:
