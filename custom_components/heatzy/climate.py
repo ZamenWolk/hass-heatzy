@@ -93,7 +93,7 @@ class HeatzyThermostat(CoordinatorEntity[HeatzyDataUpdateCoordinator], ClimateEn
         """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self.unique_id)},
-            name=self.name,
+            name=self.coordinator.data[self.unique_id][CONF_ALIAS],
             manufacturer=DOMAIN,
             sw_version=self.coordinator.data[self.unique_id].get(CONF_VERSION),
             model=self.coordinator.data[self.unique_id].get(CONF_MODEL),
