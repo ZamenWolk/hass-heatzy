@@ -1,6 +1,8 @@
 """Heatzy platform configuration."""
+import asyncio
 import logging
-from datetime import timedelta
+import threading
+from datetime import timedelta, datetime
 
 import async_timeout
 from heatzypy import HeatzyClient
@@ -42,6 +44,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
     """Define an object to fetch datas."""
 
+    _last_updated_time: dict[str, datetime] = {}
+
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Class to manage fetching Heatzy data API."""
         super().__init__(
@@ -53,11 +57,27 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
                 hass, _LOGGER, cooldown=DEBOUNCE_COOLDOWN, immediate=False
             ),
         )
-        self.api = HeatzyClient(
+
+        self._api = HeatzyClient(
             entry.data[CONF_USERNAME],
             entry.data[CONF_PASSWORD],
             async_create_clientsession(hass),
         )
+
+        self._lock = threading.Lock()
+
+    async def async_control_device(self, device_id, payload):
+        with self._lock:
+            last_update = self._last_updated_time.get(device_id)
+            now = datetime.now()
+            delta = now - last_update if last_update is not None else None
+            if last_update is not None and delta < timedelta(seconds=1):
+                _LOGGER.warning(f"Need to sleep for {delta.total_seconds()} because last update was "
+                                f"too soon")
+                await asyncio.sleep(delta.total_seconds())
+
+            self._last_updated_time[device_id] = now
+            return await self._api.async_control_device(device_id, payload)
 
     async def _async_update_data(self) -> dict:
         """Update data."""

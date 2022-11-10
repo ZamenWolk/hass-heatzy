@@ -1,5 +1,6 @@
 """Climate sensors for Heatzy."""
 import logging
+from typing import Optional
 
 from heatzypy.exception import HeatzyException
 from homeassistant.components.climate import (
@@ -146,7 +147,7 @@ class HeatzyPiloteV1Thermostat(HeatzyThermostat):
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""
         try:
-            await self.coordinator.api.async_control_device(
+            await self.coordinator.async_control_device(
                 self.unique_id,
                 {"raw": self.HA_TO_HEATZY_STATE.get(preset_mode)},
             )
@@ -187,7 +188,7 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
     }
 
     @property
-    def target_temperature(self) -> float | None:
+    def target_temperature(self) -> Optional[float]:
         return self.PRESET_TO_TEMP.get(self.preset_mode)
 
     async def async_set_temperature(self, **kwargs) -> None:
@@ -216,13 +217,15 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
     async def async_set_hvac_mode(self, hvac_mode: str) -> bool:
         """Set new hvac mode."""
         if hvac_mode == HVACMode.OFF:
-            await self.do_control_device(PRESET_NONE, False)
+            await self.async_set_preset_mode(PRESET_NONE)
+            await self.async_set_auto_mode(False)
         else:
             new_preset = PRESET_COMFORT if self.preset_mode == PRESET_NONE else self.preset_mode
+            await self.async_set_preset_mode(new_preset)
             if hvac_mode == HVACMode.HEAT:
-                await self.do_control_device(new_preset, False)
+                await self.async_set_auto_mode(False)
             elif hvac_mode == HVACMode.AUTO:
-                await self.do_control_device(new_preset, True)
+                await self.async_set_auto_mode(True)
 
     @property
     def preset_mode(self) -> str:
@@ -233,12 +236,16 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set new preset mode."""
-        await self.do_control_device(preset_mode, self.auto_mode)
-
-    async def do_control_device(self, preset_mode: str, timer: bool):
-        await self.coordinator.api.async_control_device(
+        await self.coordinator.async_control_device(
             self.unique_id,
-            {CONF_ATTRS: {CONF_MODE: self.HA_TO_HEATZY_STATE.get(preset_mode), CONF_TIMER: 1 if timer else 0}}
+            {CONF_ATTRS: {CONF_MODE: self.HA_TO_HEATZY_STATE.get(preset_mode)}}
+        )
+        await self.coordinator.async_request_refresh()
+
+    async def async_set_auto_mode(self, auto_mode: bool):
+        await self.coordinator.async_control_device(
+            self.unique_id,
+            {CONF_ATTRS: {CONF_TIMER: 1 if auto_mode else 0}}
         )
         await self.coordinator.async_request_refresh()
 
@@ -300,7 +307,7 @@ class Glowv1Thermostat(HeatzyPiloteV2Thermostat):
         ] = b_temp_cft
 
         try:
-            await self.coordinator.api.async_control_device(
+            await self.coordinator.async_control_device(
                 self.unique_id,
                 {
                     CONF_ATTRS: {
@@ -316,7 +323,7 @@ class Glowv1Thermostat(HeatzyPiloteV2Thermostat):
     async def async_turn_on(self) -> str:
         """Turn device on."""
         try:
-            await self.coordinator.api.async_control_device(
+            await self.coordinator.async_control_device(
                 self.unique_id, {CONF_ATTRS: {CONF_ON_OFF: 1}}
             )
             await self.coordinator.async_request_refresh()
@@ -326,7 +333,7 @@ class Glowv1Thermostat(HeatzyPiloteV2Thermostat):
     async def async_turn_off(self) -> str:
         """Turn device off."""
         try:
-            await self.coordinator.api.async_control_device(
+            await self.coordinator.async_control_device(
                 self.unique_id, {CONF_ATTRS: {CONF_ON_OFF: 0}}
             )
             await self.coordinator.async_request_refresh()
