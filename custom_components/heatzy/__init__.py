@@ -40,6 +40,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
 
+min_diff = timedelta(seconds=1.5)
 
 class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
     """Define an object to fetch datas."""
@@ -71,13 +72,14 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
             last_update = self._last_updated_time.get(device_id)
             now = datetime.now()
             delta = now - last_update if last_update is not None else None
-            if last_update is not None and delta < timedelta(seconds=1):
-                _LOGGER.warning(f"Need to sleep for {delta.total_seconds()} because last update was "
-                                f"too soon")
-                await asyncio.sleep(delta.total_seconds())
+            if delta is not None and delta < min_diff:
+                _LOGGER.warning(f"Need to sleep for {(min_diff - delta).total_seconds()}s because "
+                                f"last update was too {delta.total_seconds()}s ago")
+                await asyncio.sleep((min_diff - delta).total_seconds())
 
-            self._last_updated_time[device_id] = now
-            return await self._api.async_control_device(device_id, payload)
+            ret = await self._api.async_control_device(device_id, payload)
+            self._last_updated_time[device_id] = datetime.now()
+            return ret
 
     async def _async_update_data(self) -> dict:
         """Update data."""

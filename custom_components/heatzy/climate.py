@@ -220,8 +220,9 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
             await self.async_set_preset_mode(PRESET_NONE)
             await self.async_set_auto_mode(False)
         else:
-            new_preset = PRESET_COMFORT if self.preset_mode == PRESET_NONE else self.preset_mode
-            await self.async_set_preset_mode(new_preset)
+            if self.preset_mode:
+                await self.async_set_preset_mode(PRESET_COMFORT)
+
             if hvac_mode == HVACMode.HEAT:
                 await self.async_set_auto_mode(False)
             elif hvac_mode == HVACMode.AUTO:
