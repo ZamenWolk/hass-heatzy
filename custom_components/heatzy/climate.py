@@ -191,9 +191,12 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any]:
+        last_update = self.coordinator.get_last_updated_time(self.unique_id)
         return {
             "recent_update_by_homeassistant":
-                (self.coordinator.get_last_updated_time(self.unique_id) - datetime.now()) < timedelta(seconds=5)
+                (last_update - datetime.now()) < timedelta(seconds=5)
+                if last_update is not None
+                else False
         }
 
 
