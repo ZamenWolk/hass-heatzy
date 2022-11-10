@@ -2,11 +2,13 @@
 import asyncio
 import logging
 import threading
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, time
+from typing import Optional
 
 import async_timeout
 from heatzypy import HeatzyClient
 from heatzypy.exception import AuthenticationFailed, HeatzyException
+from homeassistant.components.climate import PRESET_COMFORT, PRESET_ECO, PRESET_AWAY, PRESET_NONE
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
@@ -15,11 +17,19 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import API_TIMEOUT, DEBOUNCE_COOLDOWN, DOMAIN, PLATFORMS
+from .const import API_TIMEOUT, DEBOUNCE_COOLDOWN, DOMAIN, PLATFORMS, CONF_ATTR
 
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = 60
 
+_BITS_PER_STATE = 2
+
+_BITS_TO_PRESET = {
+    0: PRESET_COMFORT,
+    1: PRESET_ECO,
+    2: PRESET_AWAY,
+    3: PRESET_NONE
+}
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Heatzy as config entry."""
@@ -81,11 +91,22 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
             self._last_updated_time[device_id] = datetime.now()
             return ret
 
+    def get_programmed_preset_at_date(self, unique_id: str, date: datetime) -> Optional[str]:
+        key = f"p{date.isoweekday()}_data{date.hour/2}"
+        state_value = self.data.data[unique_id].get(CONF_ATTR, {}).get(key)
+
+        if state_value is None:
+            return None
+
+        block_nb = ((date.hour % 2) >> 1) + int(date.minute < 30)
+        return _BITS_TO_PRESET[(state_value << (_BITS_PER_STATE*block_nb)) % 2*_BITS_PER_STATE]
+
     async def _async_update_data(self) -> dict:
         """Update data."""
         try:
             async with async_timeout.timeout(API_TIMEOUT):
-                return await self._api.async_get_devices()
+                data = await self._api.async_get_devices()
+                return data
         except AuthenticationFailed as error:
             raise ConfigEntryAuthFailed from error
         except HeatzyException as error:
