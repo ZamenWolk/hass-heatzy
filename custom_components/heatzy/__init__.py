@@ -91,6 +91,9 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
             self._last_updated_time[device_id] = datetime.now()
             return ret
 
+    def get_last_updated_time(self, device_id: str) -> Optional[datetime]:
+        return self._last_updated_time.get(device_id)
+
     def get_programmed_preset_at_date(self, unique_id: str, date: datetime) -> Optional[str]:
         key = f"p{date.isoweekday()}_data{date.hour/2}"
         state_value = self.data.data[unique_id].get(CONF_ATTR, {}).get(key)
