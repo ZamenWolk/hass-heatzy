@@ -1,7 +1,7 @@
 """Climate sensors for Heatzy."""
 from datetime import datetime, timedelta
 import logging
-from typing import Optional, Any, Mapping, Callable
+from typing import Optional, Any, Mapping
 
 from heatzypy.exception import HeatzyException
 from homeassistant.components.climate import (
@@ -21,10 +21,9 @@ from homeassistant.components.climate.const import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import TEMP_CELSIUS
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.event import async_track_point_in_utc_time
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import HeatzyDataUpdateCoordinator
@@ -167,9 +166,6 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
     _attr_max_temp = 21
     _attr_target_temperature_step = 1
 
-    _has_been_controlled_by_heatzy = False
-    _unsub_unset: Optional[Callable[[], None]] = None
-
     # spell-checker:disable
     HEATZY_TO_HA_STATE = {
         "cft": PRESET_COMFORT,
@@ -193,38 +189,14 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
         PRESET_NONE: 0
     }
 
-    def _clear_listener(self):
-        if self._unsub_unset is not None:
-            self._unsub_unset()
-            self._unsub_unset = None
-
-    @callback
-    def _reset_control_flag(self, _):
-        self._has_been_controlled_by_heatzy = False
-        self._unsub_unset = None
-        self.async_write_ha_state()
-
-    async def _control_and_reset_timer(self, device_id, payload):
-        await self.coordinator.async_control_device(device_id, payload)
-        await self.coordinator.async_request_refresh()
-
-        self._has_been_controlled_by_heatzy = True
-        self.async_write_ha_state()
-
-        self._unsub_unset = async_track_point_in_utc_time(
-            self.hass,
-            self._reset_control_flag,
-            datetime.now() + timedelta(seconds=5),
-        )
-
-    def __init__(self, coordinator: HeatzyDataUpdateCoordinator, unique_id):
-        super().__init__(coordinator, unique_id)
-        self.async_on_remove(self._clear_listener)
-
     @property
     def extra_state_attributes(self) -> Mapping[str, Any]:
+        last_update = self.coordinator.get_last_updated_time(self.unique_id)
         return {
-            "recent_update_by_homeassistant": self._has_been_controlled_by_heatzy
+            "recent_update_by_homeassistant":
+                (last_update - datetime.now()) < timedelta(seconds=5)
+                if last_update is not None
+                else False
         }
 
 
@@ -256,10 +228,11 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
         return self.coordinator.data[self.unique_id].get(CONF_ATTR, {}).get(CONF_TIMER) == 1
 
     async def async_set_auto_mode(self, auto_mode: bool):
-        await self._control_and_reset_timer(
+        await self.coordinator.async_control_device(
             self.unique_id,
             {CONF_ATTRS: {CONF_TIMER: 1 if auto_mode else 0}}
         )
+        await self.coordinator.async_request_refresh()
 
     async def async_set_hvac_mode(self, hvac_mode: str) -> None:
         """Set new hvac mode."""
@@ -286,10 +259,11 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
         )
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
-        await self._control_and_reset_timer(
+        await self.coordinator.async_control_device(
             self.unique_id,
             {CONF_ATTRS: {CONF_MODE: self.HA_TO_HEATZY_STATE.get(preset_mode)}}
         )
+        await self.coordinator.async_request_refresh()
 
 
 class Glowv1Thermostat(HeatzyPiloteV2Thermostat):
