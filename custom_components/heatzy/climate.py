@@ -345,7 +345,7 @@ class Glowv1Thermostat(HeatzyPiloteV2Thermostat):
         except HeatzyException as error:
             _LOGGER.error("Error to set temperature: %s", error)
 
-    async def async_turn_on(self) -> str:
+    async def async_turn_on(self):
         """Turn device on."""
         try:
             await self.coordinator.async_control_device(
@@ -355,7 +355,7 @@ class Glowv1Thermostat(HeatzyPiloteV2Thermostat):
         except HeatzyException as error:
             _LOGGER.error("Error to turn on : %s", error)
 
-    async def async_turn_off(self) -> str:
+    async def async_turn_off(self):
         """Turn device off."""
         try:
             await self.coordinator.async_control_device(
