@@ -114,5 +114,5 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
                 return data
         except AuthenticationFailed as error:
             raise ConfigEntryAuthFailed from error
-        except HeatzyException as error:
+        except (HeatzyException, asyncio.TimeoutError) as error:
             raise UpdateFailed(error)
