@@ -78,6 +78,7 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
         self._lock = threading.Lock()
 
     async def async_control_device(self, device_id, payload):
+        _LOGGER.info(f"Acquiring lock to control device {device_id}")
         with self._lock:
             last_update = self._last_updated_time.get(device_id)
             now = datetime.now()
@@ -89,6 +90,7 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
 
             ret = await self._api.async_control_device(device_id, payload)
             self._last_updated_time[device_id] = datetime.now()
+            _LOGGER.info(f"Releasing lock to control device {device_id}")
             return ret
 
     def get_last_updated_time(self, device_id: str) -> Optional[datetime]:
