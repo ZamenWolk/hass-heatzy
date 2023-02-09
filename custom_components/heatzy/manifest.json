@@ -8,6 +8,6 @@
     "dependencies": [],
     "codeowners": ["@zamenwolk"],
     "iot_class": "cloud_polling",
-    "loggers": ["heatzypy"],
+    "loggers": ["heatzypy", "hass-heatzy", "heatzy", "custom_components.heatzy"],
     "version": "5.7.1"
 }
