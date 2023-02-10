@@ -8,13 +8,13 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
-from .const import DOMAIN
+from .const import DOMAIN, PACKAGE_NAME
 
 DATA_SCHEMA = vol.Schema(
     {vol.Required(CONF_USERNAME): str, vol.Required(CONF_PASSWORD): str}
 )
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(PACKAGE_NAME)
 
 
 class HeatzyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):

@@ -46,14 +46,14 @@ from .const import (
     GLOW,
     PILOTEV1,
     PILOTEV2,
-    CONF_ATTRS, CONF_TIMER,
+    CONF_ATTRS, CONF_TIMER, PACKAGE_NAME,
 )
 
 MODE_LIST = [HVACMode.HEAT, HVACMode.OFF]
 MODE_LIST_V2 = [HVACMode.AUTO, HVACMode.HEAT, HVACMode.OFF]
 PRESET_LIST = [PRESET_NONE, PRESET_COMFORT, PRESET_ECO, PRESET_AWAY]
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(PACKAGE_NAME)
 
 
 async def async_setup_entry(

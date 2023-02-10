@@ -10,9 +10,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import HeatzyDataUpdateCoordinator
-from .const import CONF_ALIAS, CONF_ATTR, CONF_ATTRS, DOMAIN, CONF_LOCK
+from .const import CONF_ATTR, CONF_ATTRS, DOMAIN, CONF_LOCK, PACKAGE_NAME
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(PACKAGE_NAME)
 
 
 async def async_setup_entry(

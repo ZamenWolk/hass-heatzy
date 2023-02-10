@@ -17,9 +17,9 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import API_TIMEOUT, DEBOUNCE_COOLDOWN, DOMAIN, PLATFORMS, CONF_ATTR
+from .const import API_TIMEOUT, DEBOUNCE_COOLDOWN, DOMAIN, PLATFORMS, CONF_ATTR, PACKAGE_NAME
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(PACKAGE_NAME)
 SCAN_INTERVAL = 60
 
 _BITS_PER_STATE = 2
