@@ -16,6 +16,9 @@ CUR_TEMP_H = "cur_tempH"
 CUR_TEMP_L = "cur_tempL"
 DEBOUNCE_COOLDOWN = 10
 DOMAIN = "heatzy"
+
+PACKAGE_NAME = "custom_components.heatzy"
+
 ECO_TEMP_H = "eco_tempH"
 ECO_TEMP_L = "eco_tempL"
 PLATFORMS = ["climate", "switch"]
