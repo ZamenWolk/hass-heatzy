@@ -79,7 +79,7 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def async_control_device(self, device_id, payload):
         try:
-            _LOGGER.info(f"Acquiring lock to control device {device_id}")
+            _LOGGER.warning(f"Acquiring lock to control device {device_id}")
             with self._lock:
                 last_update = self._last_updated_time.get(device_id)
                 now = datetime.now()
@@ -91,7 +91,7 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
 
                 ret = await self._api.async_control_device(device_id, payload)
                 self._last_updated_time[device_id] = datetime.now()
-                _LOGGER.info(f"Releasing lock to control device {device_id}")
+                _LOGGER.warning(f"Releasing lock to control device {device_id}")
                 return ret
         except Exception as error:
             _LOGGER.error("Error controling device: %s", error)

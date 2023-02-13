@@ -209,7 +209,7 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
         return self.PRESET_TO_TEMP.get(self.preset_mode)
 
     async def async_set_temperature(self, **kwargs) -> None:
-        _LOGGER.info(f"Setting temperature for {self._device_name}")
+        _LOGGER.warning(f"Setting temperature for {self._device_name}")
         curr_preset = PRESET_COMFORT
         temp = kwargs["temperature"]
         for pr in self.PRESET_TO_TEMP.items():
@@ -233,13 +233,13 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
         return self.coordinator.data[self.unique_id].get(CONF_ATTR, {}).get(CONF_TIMER) == 1
 
     async def async_set_auto_mode(self, auto_mode: bool):
-        _LOGGER.info(f"Setting auto mode for {self._device_name}")
+        _LOGGER.warning(f"Setting auto mode for {self._device_name}")
         await self.coordinator.async_control_device(
             self.unique_id,
             {CONF_ATTRS: {CONF_TIMER: 1 if auto_mode else 0}}
         )
         await self.coordinator.async_request_refresh()
-        _LOGGER.info(f"Auto mode set for {self._device_name}")
+        _LOGGER.warning(f"Auto mode set for {self._device_name}")
 
     async def async_set_hvac_mode(self, hvac_mode: str) -> None:
         """Set new hvac mode."""
@@ -266,13 +266,13 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
         )
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
-        _LOGGER.info(f"Setting preset mode for {self._device_name}")
+        _LOGGER.warning(f"Setting preset mode for {self._device_name}")
         await self.coordinator.async_control_device(
             self.unique_id,
             {CONF_ATTRS: {CONF_MODE: self.HA_TO_HEATZY_STATE.get(preset_mode)}}
         )
         await self.coordinator.async_request_refresh()
-        _LOGGER.info(f"Preset mode set for {self._device_name}")
+        _LOGGER.warning(f"Preset mode set for {self._device_name}")
 
 
 class Glowv1Thermostat(HeatzyPiloteV2Thermostat):
