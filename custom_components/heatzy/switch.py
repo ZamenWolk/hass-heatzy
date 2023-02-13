@@ -58,7 +58,7 @@ class LockSwitchEntity(CoordinatorEntity[HeatzyDataUpdateCoordinator], SwitchEnt
             await self.coordinator.async_control_device(
                 self.unique_id, {CONF_ATTRS: {CONF_LOCK: 1}}
             )
-        except HeatzyException as error:
+        except Exception as error:
             _LOGGER.error("Error to lock pilot : %s", error)
 
         await self.coordinator.async_request_refresh()
@@ -69,7 +69,7 @@ class LockSwitchEntity(CoordinatorEntity[HeatzyDataUpdateCoordinator], SwitchEnt
             await self.coordinator.async_control_device(
                 self.unique_id, {CONF_ATTRS: {CONF_LOCK: 0}}
             )
-        except HeatzyException as error:
+        except Exception as error:
             _LOGGER.error("Error to lock pilot : %s", error)
 
         await self.coordinator.async_request_refresh()

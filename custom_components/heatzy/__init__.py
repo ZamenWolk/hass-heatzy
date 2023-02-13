@@ -89,6 +89,7 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
                                     f"last update was too {delta.total_seconds()}s ago")
                     await asyncio.sleep((min_diff - delta).total_seconds())
 
+                _LOGGER.warning("About to send request (rip)")
                 ret = await self._api.async_control_device(device_id, payload)
                 self._last_updated_time[device_id] = datetime.now()
                 _LOGGER.warning(f"Releasing lock to control device {device_id}")
@@ -112,10 +113,12 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> dict:
         """Update data."""
         try:
-            async with async_timeout.timeout(API_TIMEOUT):
-                data = await self._api.async_get_devices()
-                return data
+            with self._lock:
+                async with async_timeout.timeout(API_TIMEOUT):
+                    data = await self._api.async_get_devices()
+                    return data
         except AuthenticationFailed as error:
             raise ConfigEntryAuthFailed from error
         except (HeatzyException, asyncio.TimeoutError) as error:
+            _LOGGER.warning("Error updating state: %s", error)
             raise UpdateFailed(error)

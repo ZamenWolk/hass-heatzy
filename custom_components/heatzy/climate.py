@@ -153,7 +153,7 @@ class HeatzyPiloteV1Thermostat(HeatzyThermostat):
                 {"raw": self.HA_TO_HEATZY_STATE.get(preset_mode)},
             )
             await self.coordinator.async_request_refresh()
-        except HeatzyException as error:
+        except Exception as error:
             _LOGGER.error("Set preset mode (%s) %s (%s)", preset_mode, error, self.name)
 
 
@@ -342,7 +342,7 @@ class Glowv1Thermostat(HeatzyPiloteV2Thermostat):
                 },
             )
             await self.coordinator.async_request_refresh()
-        except HeatzyException as error:
+        except Exception as error:
             _LOGGER.error("Error to set temperature: %s", error)
 
     async def async_turn_on(self):
@@ -352,7 +352,7 @@ class Glowv1Thermostat(HeatzyPiloteV2Thermostat):
                 self.unique_id, {CONF_ATTRS: {CONF_ON_OFF: 1}}
             )
             await self.coordinator.async_request_refresh()
-        except HeatzyException as error:
+        except Exception as error:
             _LOGGER.error("Error to turn on : %s", error)
 
     async def async_turn_off(self):
@@ -362,7 +362,7 @@ class Glowv1Thermostat(HeatzyPiloteV2Thermostat):
                 self.unique_id, {CONF_ATTRS: {CONF_ON_OFF: 0}}
             )
             await self.coordinator.async_request_refresh()
-        except HeatzyException as error:
+        except Exception as error:
             _LOGGER.error("Error to turn off : %s", error)
 
     @property
