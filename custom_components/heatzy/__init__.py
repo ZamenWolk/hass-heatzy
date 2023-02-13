@@ -78,20 +78,23 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
         self._lock = threading.Lock()
 
     async def async_control_device(self, device_id, payload):
-        _LOGGER.info(f"Acquiring lock to control device {device_id}")
-        with self._lock:
-            last_update = self._last_updated_time.get(device_id)
-            now = datetime.now()
-            delta = now - last_update if last_update is not None else None
-            if delta is not None and delta < min_diff:
-                _LOGGER.warning(f"Need to sleep for {(min_diff - delta).total_seconds()}s because "
-                                f"last update was too {delta.total_seconds()}s ago")
-                await asyncio.sleep((min_diff - delta).total_seconds())
+        try:
+            _LOGGER.info(f"Acquiring lock to control device {device_id}")
+            with self._lock:
+                last_update = self._last_updated_time.get(device_id)
+                now = datetime.now()
+                delta = now - last_update if last_update is not None else None
+                if delta is not None and delta < min_diff:
+                    _LOGGER.warning(f"Need to sleep for {(min_diff - delta).total_seconds()}s because "
+                                    f"last update was too {delta.total_seconds()}s ago")
+                    await asyncio.sleep((min_diff - delta).total_seconds())
 
-            ret = await self._api.async_control_device(device_id, payload)
-            self._last_updated_time[device_id] = datetime.now()
-            _LOGGER.info(f"Releasing lock to control device {device_id}")
-            return ret
+                ret = await self._api.async_control_device(device_id, payload)
+                self._last_updated_time[device_id] = datetime.now()
+                _LOGGER.info(f"Releasing lock to control device {device_id}")
+                return ret
+        except Exception as error:
+            _LOGGER.error("Error controling device: %s", error)
 
     def get_last_updated_time(self, device_id: str) -> Optional[datetime]:
         return self._last_updated_time.get(device_id)
