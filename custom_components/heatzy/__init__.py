@@ -81,6 +81,7 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             _LOGGER.warning(f"Acquiring lock to control device {device_id}")
             with self._lock:
+                _LOGGER.warning("Got lock")
                 last_update = self._last_updated_time.get(device_id)
                 now = datetime.now()
                 delta = now - last_update if last_update is not None else None
