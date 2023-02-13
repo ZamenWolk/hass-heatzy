@@ -1,7 +1,6 @@
 """Heatzy platform configuration."""
 import asyncio
 import logging
-import threading
 from datetime import timedelta, datetime, time
 from typing import Optional
 
@@ -75,12 +74,12 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
             async_create_clientsession(hass),
         )
 
-        self._lock = threading.Lock()
+        self._lock = asyncio.Lock()
 
     async def async_control_device(self, device_id, payload):
         try:
             _LOGGER.warning(f"Acquiring lock to control device {device_id}")
-            with self._lock:
+            async with self._lock:
                 _LOGGER.warning("Got lock")
                 last_update = self._last_updated_time.get(device_id)
                 now = datetime.now()
@@ -115,7 +114,7 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
         """Update data."""
         try:
             _LOGGER.warning("Locking for update data")
-            with self._lock:
+            async with self._lock:
                 async with async_timeout.timeout(API_TIMEOUT):
                     _LOGGER.warning("Fetching data")
                     data = await self._api.async_get_devices()
