@@ -78,24 +78,25 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def async_control_device(self, device_id, payload):
         try:
-            _LOGGER.warning(f"Acquiring lock to control device {device_id}")
+            _LOGGER.debug(f"Acquiring lock to control device {device_id}")
             async with self._lock:
-                _LOGGER.warning("Got lock")
+                _LOGGER.debug("Got lock")
                 last_update = self._last_updated_time.get(device_id)
                 now = datetime.now()
                 delta = now - last_update if last_update is not None else None
                 if delta is not None and delta < min_diff:
-                    _LOGGER.warning(f"Need to sleep for {(min_diff - delta).total_seconds()}s because "
+                    _LOGGER.info(f"Need to sleep for {(min_diff - delta).total_seconds()}s because "
                                     f"last update was too {delta.total_seconds()}s ago")
                     await asyncio.sleep((min_diff - delta).total_seconds())
 
-                _LOGGER.warning("About to send request (rip)")
+                _LOGGER.debug("About to send request (rip)")
                 ret = await self._api.async_control_device(device_id, payload)
                 self._last_updated_time[device_id] = datetime.now()
-                _LOGGER.warning(f"Releasing lock to control device {device_id}")
+                _LOGGER.debug(f"Releasing lock to control device {device_id}")
                 return ret
         except Exception as error:
-            _LOGGER.error("Error controling device: %s", error)
+            _LOGGER.error("Error controling device %s : %s",  error)
+            raise error
 
     def get_last_updated_time(self, device_id: str) -> Optional[datetime]:
         return self._last_updated_time.get(device_id)
@@ -113,14 +114,11 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> dict:
         """Update data."""
         try:
-            _LOGGER.warning("Locking for update data")
-            async with self._lock:
-                async with async_timeout.timeout(API_TIMEOUT):
-                    _LOGGER.warning("Fetching data")
-                    data = await self._api.async_get_devices()
-                    return data
+            async with async_timeout.timeout(API_TIMEOUT):
+                _LOGGER.info("Fetching data")
+                data = await self._api.async_get_devices()
+                return data
         except AuthenticationFailed as error:
             raise ConfigEntryAuthFailed from error
         except (HeatzyException, asyncio.TimeoutError) as error:
-            _LOGGER.warning("Error updating state: %s", error)
             raise UpdateFailed(error)
