@@ -113,8 +113,10 @@ class HeatzyDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> dict:
         """Update data."""
         try:
+            _LOGGER.warning("Locking for update data")
             with self._lock:
                 async with async_timeout.timeout(API_TIMEOUT):
+                    _LOGGER.warning("Fetching data")
                     data = await self._api.async_get_devices()
                     return data
         except AuthenticationFailed as error:
