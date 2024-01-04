@@ -161,7 +161,7 @@ class HeatzyPiloteV2Thermostat(HeatzyThermostat):
     """Heaty Pilote v2."""
 
     _attr_hvac_modes = MODE_LIST_V2
-    _attr_supported_features = HeatzyThermostat._attr_supported_features | ClimateEntityFeature.TARGET_TEMPERATURE
+    _attr_supported_features = ClimateEntityFeature.PRESET_MODE | ClimateEntityFeature.TARGET_TEMPERATURE
     _attr_min_temp = 0
     _attr_max_temp = 21
     _attr_target_temperature_step = 1

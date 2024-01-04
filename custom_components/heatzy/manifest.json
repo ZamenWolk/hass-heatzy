@@ -9,5 +9,5 @@
     "codeowners": ["@zamenwolk"],
     "iot_class": "cloud_polling",
     "loggers": ["heatzypy", "custom_components.heatzy"],
-    "version": "5.7.1"
+    "version": "5.8.0"
 }
